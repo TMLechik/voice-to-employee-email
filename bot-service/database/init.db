@@ -1,0 +1,65 @@
+BEGIN;
+
+-- =========================
+-- 1. Клиенты Telegram-бота
+-- =========================
+CREATE TABLE IF NOT EXISTS telegram_bot_clients (
+    id               BIGSERIAL PRIMARY KEY,
+    telegram_user_id BIGINT NOT NULL UNIQUE,
+    username         VARCHAR(255),
+    full_name        VARCHAR(255) NOT NULL,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Индекс на username, если потребуется быстрый поиск
+CREATE INDEX IF NOT EXISTS idx_telegram_bot_clients_username
+    ON telegram_bot_clients (username);
+
+
+-- =========================================
+-- 2. Получатели сообщений в Telegram
+-- =========================================
+CREATE TABLE IF NOT EXISTS message_recipients (
+    id               BIGSERIAL PRIMARY KEY,
+    telegram_chat_id BIGINT NOT NULL UNIQUE,
+    username         VARCHAR(255),
+    full_name        VARCHAR(255) NOT NULL,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Индекс на username, если потребуется быстрый поиск
+CREATE INDEX IF NOT EXISTS idx_message_recipients_username
+    ON message_recipients (username);
+
+
+-- =====================================================
+-- 3. Связующая таблица: клиент бота <-> получатель
+-- =====================================================
+CREATE TABLE IF NOT EXISTS client_recipient_links (
+    id            BIGSERIAL PRIMARY KEY,
+    client_id     BIGINT NOT NULL,
+    recipient_id  BIGINT NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_client_recipient_links_client
+        FOREIGN KEY (client_id)
+        REFERENCES telegram_bot_clients (id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_client_recipient_links_recipient
+        FOREIGN KEY (recipient_id)
+        REFERENCES message_recipients (id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_client_recipient_links_client_recipient
+        UNIQUE (client_id, recipient_id)
+);
+
+-- Индексы для ускорения JOIN и выборок
+CREATE INDEX IF NOT EXISTS idx_client_recipient_links_client_id
+    ON client_recipient_links (client_id);
+
+CREATE INDEX IF NOT EXISTS idx_client_recipient_links_recipient_id
+    ON client_recipient_links (recipient_id);
+
+COMMIT;

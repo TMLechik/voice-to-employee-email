@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+
+.env
+bot-service/.env
+bot-service/database/*.sqlite3
+bot-service/database/*.sqlite3-*

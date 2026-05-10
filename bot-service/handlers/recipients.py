@@ -1,0 +1,40 @@
+from aiogram import F, Router
+from aiogram.filters import Command
+from aiogram.types import CallbackQuery, Message
+
+from services import BotService
+
+from .common import edit_or_answer, ensure_client, ensure_client_from_callback, format_recipients
+from .keyboards import empty_recipients_keyboard, recipients_list_keyboard
+
+
+def get_router(service: BotService) -> Router:
+    router = Router(name="recipients-command")
+
+    @router.message(Command("recipients"))
+    async def recipients(message: Message) -> None:
+        client = ensure_client(service, message)
+        linked_recipients = service.list_recipients(client.id)
+        reply_markup = (
+            recipients_list_keyboard()
+            if linked_recipients
+            else empty_recipients_keyboard()
+        )
+        await message.answer(format_recipients(linked_recipients), reply_markup=reply_markup)
+
+    @router.callback_query(F.data == "menu:recipients")
+    async def recipients_callback(callback: CallbackQuery) -> None:
+        client = ensure_client_from_callback(service, callback)
+        linked_recipients = service.list_recipients(client.id)
+        reply_markup = (
+            recipients_list_keyboard()
+            if linked_recipients
+            else empty_recipients_keyboard()
+        )
+        await edit_or_answer(
+            callback,
+            format_recipients(linked_recipients),
+            reply_markup=reply_markup,
+        )
+
+    return router
