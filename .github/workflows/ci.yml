@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.12"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check Python syntax
+        run: |
+          python -B - <<'PY'
+          from pathlib import Path
+
+          files = sorted(Path("bot-service").rglob("*.py"))
+          for path in files:
+              compile(path.read_text(encoding="utf-8"), str(path), "exec")
+
+          print(f"syntax ok: {len(files)} files")
+          PY
+
+      - name: Check application imports
+        run: |
+          python -B - <<'PY'
+          from pathlib import Path
+          import sys
+
+          sys.path.insert(0, str(Path("bot-service").resolve()))
+
+          import Application  # noqa: F401
+          from handlers import create_router  # noqa: F401
+
+          print("application imports ok")
+          PY
+
+      - name: Run SQLite service smoke test
+        run: |
+          python -B - <<'PY'
+          from pathlib import Path
+          import sys
+          import tempfile
+
+          sys.path.insert(0, str(Path("bot-service").resolve()))
+
+          from repositories import SQLiteBotRepository
+          from services import BotService
+
+          schema_path = Path("bot-service/database/schema.sql").resolve()
+
+          with tempfile.TemporaryDirectory() as tmp_dir:
+              db_path = Path(tmp_dir) / "ci.sqlite3"
+              repository = SQLiteBotRepository(db_path, schema_path)
+              repository.initialize()
+
+              service = BotService(repository)
+              client = service.register_client(1001, "student", "Student User")
+              first = service.add_recipient(client.id, -2002, "group", "Theory Group")
+              service.add_recipient(client.id, -2003, "channel", "Theory Channel")
+
+              recipients = service.list_recipients(client.id)
+              assert len(recipients) == 2
+              assert service.select_recipient_by_id(recipients, first.id) == first
+
+              pending = service.create_pending_send(1001, 5000, recipients)
+              assert service.get_pending_send(1001, 5000) == pending
+              assert len(service.select_recipients_for_send(recipients, "all")) == 2
+              assert service.consume_pending_send(1001, 5000) == pending
+              assert service.get_pending_send(1001, 5000) is None
+
+          print("sqlite service smoke test passed")
+          PY
