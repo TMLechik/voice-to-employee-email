@@ -1,0 +1,107 @@
+from __future__ import annotations
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+from repositories import Recipient
+
+
+def main_menu_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Добавить текущий чат",
+                    callback_data="recipient:add_current",
+                )
+            ],
+            [
+                InlineKeyboardButton(text="Мои получатели", callback_data="menu:recipients"),
+                InlineKeyboardButton(text="Отправить", callback_data="send:menu"),
+            ],
+            [
+                InlineKeyboardButton(text="Удалить", callback_data="recipient:remove_menu"),
+                InlineKeyboardButton(text="Показать ID", callback_data="menu:id"),
+            ],
+            [InlineKeyboardButton(text="Справка", callback_data="menu:help")],
+        ]
+    )
+
+
+def back_to_menu_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="В меню", callback_data="menu:main")],
+        ]
+    )
+
+
+def recipients_list_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Отправить", callback_data="send:menu"),
+                InlineKeyboardButton(text="Удалить", callback_data="recipient:remove_menu"),
+            ],
+            [InlineKeyboardButton(text="В меню", callback_data="menu:main")],
+        ]
+    )
+
+
+def empty_recipients_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Добавить текущий чат",
+                    callback_data="recipient:add_current",
+                )
+            ],
+            [InlineKeyboardButton(text="В меню", callback_data="menu:main")],
+        ]
+    )
+
+
+def send_targets_keyboard(recipients: list[Recipient]) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    if len(recipients) > 1:
+        rows.append([InlineKeyboardButton(text="Всем получателям", callback_data="send:all")])
+
+    for recipient in recipients:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=_recipient_button_text(recipient),
+                    callback_data=f"send:recipient:{recipient.id}",
+                )
+            ]
+        )
+
+    rows.append([InlineKeyboardButton(text="В меню", callback_data="menu:main")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def remove_targets_keyboard(recipients: list[Recipient]) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=_recipient_button_text(recipient),
+                callback_data=f"recipient:remove:{recipient.id}",
+            )
+        ]
+        for recipient in recipients
+    ]
+    rows.append([InlineKeyboardButton(text="В меню", callback_data="menu:main")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def cancel_send_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Отменить отправку", callback_data="send:cancel")],
+        ]
+    )
+
+
+def _recipient_button_text(recipient: Recipient) -> str:
+    title = recipient.full_name or recipient.username or str(recipient.telegram_chat_id)
+    return title[:60]
