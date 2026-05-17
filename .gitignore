@@ -5,3 +5,5 @@ __pycache__/
 bot-service/.env
 bot-service/database/*.sqlite3
 bot-service/database/*.sqlite3-*
+
+docs
