@@ -8,4 +8,4 @@ bot-service/database/*.sqlite3-*
 
 docs
 
-bot-service\ml\models
+bot-service/ml/models
