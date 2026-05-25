@@ -1,2 +1,6 @@
 aiogram>=3.4,<4
 faster-whisper>=1.0
+torch>=2.0
+transformers>=4.40
+datasets>=2.18
+accelerate>=0.28
