@@ -7,3 +7,5 @@ bot-service/database/*.sqlite3
 bot-service/database/*.sqlite3-*
 
 docs
+
+bot-service\ml\models
