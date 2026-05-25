@@ -4,3 +4,5 @@ torch>=2.0
 transformers>=4.40
 datasets>=2.18
 accelerate>=0.28
+rapidfuzz>=3.6
+pymorphy3>=2.0
