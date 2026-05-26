@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+from services.recipient_matcher import RecipientCandidate
 from repositories import Recipient
 
 
@@ -105,3 +106,28 @@ def cancel_send_keyboard() -> InlineKeyboardMarkup:
 def _recipient_button_text(recipient: Recipient) -> str:
     title = recipient.full_name or recipient.username or str(recipient.telegram_chat_id)
     return title[:60]
+
+
+def recipient_candidates_keyboard(candidates: list[RecipientCandidate]) -> InlineKeyboardMarkup:
+    buttons: list[list[InlineKeyboardButton]] = []
+
+    for candidate in candidates[:3]:
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=f"{candidate.recipient.full_name} ({candidate.score:.0f}%)",
+                    callback_data=f"voice_match:recipient:{candidate.recipient.id}",
+                )
+            ]
+        )
+
+    buttons.append(
+        [
+            InlineKeyboardButton(
+                text="Отмена",
+                callback_data="voice_match:cancel",
+            )
+        ]
+    )
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
