@@ -42,6 +42,24 @@ CREATE TABLE IF NOT EXISTS client_recipient_links (
         UNIQUE (client_id, recipient_id)
 );
 
+CREATE TABLE IF NOT EXISTS recipient_aliases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recipient_id INTEGER NOT NULL,
+    alias TEXT NOT NULL,
+
+    CONSTRAINT fk_recipient_aliases_recipient
+        FOREIGN KEY (recipient_id)
+        REFERENCES message_recipients (id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_recipient_aliases_recipient_alias
+        UNIQUE (recipient_id, alias)
+);
+
+CREATE INDEX IF NOT EXISTS idx_recipient_aliases_recipient_id
+    ON recipient_aliases (recipient_id);
+
+
 CREATE INDEX IF NOT EXISTS idx_client_recipient_links_client_id
     ON client_recipient_links (client_id);
 
