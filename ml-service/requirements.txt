@@ -1,0 +1,7 @@
+accelerate>=0.28
+datasets>=2.18
+faster-whisper>=1.0
+pymorphy3>=2.0
+rapidfuzz>=3.6
+torch>=2.0
+transformers>=4.40

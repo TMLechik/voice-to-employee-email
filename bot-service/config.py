@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
 
 
 def _load_dotenv(path: Path) -> None:
@@ -41,6 +42,9 @@ class Settings:
     bot_token: str
     db_path: Path
     schema_path: Path
+    slot_filling_model_path: Path
+    stt_model_size: str = "base"
+    stt_device: str = "cpu"
     log_level: int = logging.INFO
 
     @classmethod
@@ -57,5 +61,11 @@ class Settings:
             bot_token=bot_token,
             db_path=_path_from_env("BOT_DB_PATH", BASE_DIR / "database" / "bot.sqlite3"),
             schema_path=_path_from_env("BOT_SCHEMA_PATH", BASE_DIR / "database" / "schema.sql"),
+            slot_filling_model_path=_path_from_env(
+                "SLOT_FILLING_MODEL_PATH",
+                PROJECT_ROOT / "ml-service" / "models" / "rubert-slot-filling",
+            ),
+            stt_model_size=os.getenv("STT_MODEL_SIZE", "base"),
+            stt_device=os.getenv("STT_DEVICE", "cpu"),
             log_level=_log_level_from_env(),
         )

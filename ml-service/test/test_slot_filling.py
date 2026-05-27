@@ -1,13 +1,13 @@
 from pathlib import Path
 import sys
 
-BOT_SERVICE_DIR = Path(__file__).resolve().parents[1]
-sys.path.append(str(BOT_SERVICE_DIR))
+ML_SERVICE_DIR = Path(__file__).resolve().parents[1]
+sys.path.append(str(ML_SERVICE_DIR))
 
-from services.slot_filling_service import RuBertSlotFillingService
+from ml_service import RuBertSlotFillingService
 
 def main() -> None:
-    model_path = BOT_SERVICE_DIR / "ml" / "models" / "rubert-slot-filling"
+    model_path = ML_SERVICE_DIR / "models" / "rubert-slot-filling"
     service = RuBertSlotFillingService(model_path)
 
     text = [

@@ -13,14 +13,17 @@ MENU_TEXT = """Главное меню
 
 HELP_TEXT = """Основные действия доступны кнопками в меню.
 
-Можно также использовать команды:
-/start - открыть главное меню
-/id - показать Telegram ID текущего пользователя и чата
-/add_recipient - добавить текущий чат как получателя
-/add_recipient <chat_id> <название> - добавить получателя по chat_id
-/recipients - показать связанных получателей
-/remove_recipient <номер|chat_id|@username> - удалить связь с получателем
-/send <номер|chat_id|@username|all> <текст> - отправить сообщение"""
+Как пользоваться ботом:
+
+1. Нажмите «Добавить получателя».
+2. Отправьте chat_id и ФИО получателя одним сообщением.
+3. Нажмите «Отправить».
+4. Запишите голосовое сообщение. В нем назовите получателя и текст, который нужно передать.
+5. Бот распознает голос, выделит получателя и сообщение, затем найдет получателя в вашей базе.
+6. Если бот не уверен в адресате, он покажет подходящие варианты кнопками.
+7. Проверьте текст и подтвердите отправку.
+
+Получателю сообщение приходит в формате: <@отправитель>: <текст>."""
 
 
 def ensure_client(service: BotService, message: Message) -> Client:
@@ -56,22 +59,6 @@ def user_full_name_from_user(user: User) -> str:
         if part
     ).strip()
     return full_name or user.username or str(user.id)
-
-
-def chat_username(message: Message) -> str | None:
-    username = getattr(message.chat, "username", None)
-    return username or None
-
-
-def chat_full_name(message: Message) -> str:
-    title = getattr(message.chat, "title", None)
-    if title:
-        return title
-
-    if message.chat.type == "private":
-        return user_full_name(message)
-
-    return f"Chat {message.chat.id}"
 
 
 def recipient_title(recipient: Recipient) -> str:

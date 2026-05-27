@@ -2,29 +2,36 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Protocol
 
 import pymorphy3
 from rapidfuzz import fuzz
 
-from repositories import Recipient
+
+class RecipientLike(Protocol):
+    id: int
+    username: str | None
+    full_name: str
+
 
 @dataclass(frozen=True)
 class RecipientCandidate:
-    recipient: Recipient
+    recipient: RecipientLike
     score: float
     matched_value: str
     matched_kind: str
 
+
 @dataclass(frozen=True)
 class RecipientMatchResult:
     status: str
-    recipient: Recipient | None
+    recipient: RecipientLike | None
     candidates: list[RecipientCandidate]
 
     @property
     def is_exact(self) -> bool:
         return self.status == "exact"
-    
+
     @property
     def is_confident(self) -> bool:
         return self.status == "confident"
@@ -37,7 +44,8 @@ class RecipientMatchResult:
     def is_not_found(self) -> bool:
         return self.status == "not_found"
 
-class RecipientMathcer:
+
+class RecipientMatcher:
     def __init__(
         self,
         confident_score: float = 92.0,
@@ -52,7 +60,7 @@ class RecipientMathcer:
     def match(
         self,
         query: str,
-        recipients: list[Recipient],
+        recipients: list[RecipientLike],
         aliases_by_recipient_id: dict[int, list[str]] | None = None,
     ) -> RecipientMatchResult:
         aliases_by_recipient_id = aliases_by_recipient_id or {}
@@ -67,7 +75,7 @@ class RecipientMathcer:
                 recipient=exact_candidate.recipient,
                 candidates=[exact_candidate],
             )
-        
+
         candidates = self._find_fuzzy_matches(query_keys, search_items)
         if not candidates:
             return RecipientMatchResult(
@@ -85,7 +93,7 @@ class RecipientMathcer:
                 recipient=None,
                 candidates=candidates[:3],
             )
-        
+
         has_safe_gap = second is None or best.score - second.score >= self.min_gap
 
         if best.score >= self.confident_score and has_safe_gap:
@@ -94,19 +102,19 @@ class RecipientMathcer:
                 recipient=best.recipient,
                 candidates=candidates[:3],
             )
-        
+
         return RecipientMatchResult(
             status="ambiguous",
             recipient=None,
             candidates=candidates[:3],
         )
-    
+
     def _build_search_items(
         self,
-        recipients: list[Recipient],
+        recipients: list[RecipientLike],
         aliases_by_recipient_id: dict[int, list[str]],
-    ) -> list[tuple[Recipient, str, str, set[str]]]:
-        items: list[tuple[Recipient, str, str, set[str]]] = []
+    ) -> list[tuple[RecipientLike, str, str, set[str]]]:
+        items: list[tuple[RecipientLike, str, str, set[str]]] = []
 
         for recipient in recipients:
             values = [recipient.full_name]
@@ -124,12 +132,12 @@ class RecipientMathcer:
                     items.append((recipient, value, kind, keys))
 
         return items
-    
+
     def _find_exact_match(
         self,
         query_keys: set[str],
-        search_items: list[tuple[Recipient, str, str, set[str]]],
-) -> RecipientCandidate | None:
+        search_items: list[tuple[RecipientLike, str, str, set[str]]],
+    ) -> RecipientCandidate | None:
         for recipient, value, kind, item_keys in search_items:
             if query_keys & item_keys:
                 return RecipientCandidate(
@@ -140,11 +148,11 @@ class RecipientMathcer:
                 )
 
         return None
-    
+
     def _find_fuzzy_matches(
         self,
         query_keys: set[str],
-        search_items: list[tuple[Recipient, str, str, set[str]]],
+        search_items: list[tuple[RecipientLike, str, str, set[str]]],
     ) -> list[RecipientCandidate]:
         best_by_recipient_id: dict[int, RecipientCandidate] = {}
 
@@ -165,7 +173,7 @@ class RecipientMathcer:
             key=lambda candidate: candidate.score,
             reverse=True,
         )
-    
+
     def _max_token_sort_score(self, left_keys: set[str], right_keys: set[str]) -> float:
         best_score = 0.0
 
@@ -175,7 +183,7 @@ class RecipientMathcer:
                 best_score = max(best_score, float(score))
 
         return best_score
-    
+
     def _make_search_keys(self, value: str) -> set[str]:
         cleaned = self._clean(value)
 
@@ -193,10 +201,10 @@ class RecipientMathcer:
             keys.add(without_username_symbol)
 
         return keys
-    
+
     def _clean(self, value: str) -> str:
         value = value.lower().replace("ё", "е")
-        value = re.sub(r"[^а-яa-z0-9@._\\-\\s]", " ", value)
+        value = re.sub(r"[^а-яa-z0-9@._\-\s]", " ", value)
         return " ".join(value.split())
 
     def _lemmatize(self, value: str) -> str:
@@ -215,3 +223,6 @@ class RecipientMathcer:
                 normalized_words.append(word)
 
         return " ".join(normalized_words)
+
+
+RecipientMathcer = RecipientMatcher

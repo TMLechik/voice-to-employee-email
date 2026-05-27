@@ -1,13 +1,13 @@
 from pathlib import Path
 import sys
 
-BOT_SERVICE_DIR = Path(__file__).resolve().parents[1]
-sys.path.append(str(BOT_SERVICE_DIR))
+ML_SERVICE_DIR = Path(__file__).resolve().parents[1]
+sys.path.append(str(ML_SERVICE_DIR))
 
-from services.stt_service import SpeechToTextService
+from ml_service import SpeechToTextService
 
 def main() -> None:
-    audio_path = Path(__file__).resolve().parents[1] / "samples" / "test_voice.mp3"
+    audio_path = ML_SERVICE_DIR / "samples" / "test_voice.mp3"
 
     if not audio_path.exists():
         raise FileNotFoundError(f"Audio file not found: {audio_path}")

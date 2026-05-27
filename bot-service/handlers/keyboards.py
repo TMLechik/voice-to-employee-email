@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from services.recipient_matcher import RecipientCandidate
+from ml_service import RecipientCandidate
 from repositories import Recipient
 
 
@@ -11,8 +11,8 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Добавить текущий чат",
-                    callback_data="recipient:add_current",
+                    text="Добавить получателя",
+                    callback_data="recipient:add",
                 )
             ],
             [
@@ -53,32 +53,13 @@ def empty_recipients_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Добавить текущий чат",
-                    callback_data="recipient:add_current",
+                    text="Добавить получателя",
+                    callback_data="recipient:add",
                 )
             ],
             [InlineKeyboardButton(text="В меню", callback_data="menu:main")],
         ]
     )
-
-
-def send_targets_keyboard(recipients: list[Recipient]) -> InlineKeyboardMarkup:
-    rows: list[list[InlineKeyboardButton]] = []
-    if len(recipients) > 1:
-        rows.append([InlineKeyboardButton(text="Всем получателям", callback_data="send:all")])
-
-    for recipient in recipients:
-        rows.append(
-            [
-                InlineKeyboardButton(
-                    text=_recipient_button_text(recipient),
-                    callback_data=f"send:recipient:{recipient.id}",
-                )
-            ]
-        )
-
-    rows.append([InlineKeyboardButton(text="В меню", callback_data="menu:main")])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def remove_targets_keyboard(recipients: list[Recipient]) -> InlineKeyboardMarkup:
@@ -95,10 +76,42 @@ def remove_targets_keyboard(recipients: list[Recipient]) -> InlineKeyboardMarkup
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def cancel_send_keyboard() -> InlineKeyboardMarkup:
+def cancel_add_recipient_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Отменить отправку", callback_data="send:cancel")],
+            [InlineKeyboardButton(text="Отмена", callback_data="recipient:add_cancel")],
+        ]
+    )
+
+
+def voice_confirmation_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Отправить",
+                    callback_data="voice_match:confirm",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="Отмена",
+                    callback_data="voice_match:cancel",
+                )
+            ],
+        ]
+    )
+
+
+def voice_cancel_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Отмена",
+                    callback_data="voice_match:cancel",
+                )
+            ],
         ]
     )
 

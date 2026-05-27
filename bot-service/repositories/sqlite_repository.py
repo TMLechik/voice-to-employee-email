@@ -123,6 +123,46 @@ class SQLiteBotRepository:
             )
             return cursor.rowcount
 
+    def add_recipient_alias(self, recipient_id: int, alias: str) -> None:
+        normalized_alias = alias.strip()
+        if not normalized_alias:
+            return
+
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO recipient_aliases (recipient_id, alias)
+                VALUES (?, ?)
+                """,
+                (recipient_id, normalized_alias),
+            )
+
+    def list_recipient_aliases(self, recipient_ids: list[int]) -> dict[int, list[str]]:
+        if not recipient_ids:
+            return {}
+
+        placeholders = ",".join("?" for _ in recipient_ids)
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT recipient_id, alias
+                FROM recipient_aliases
+                WHERE recipient_id IN ({placeholders})
+                ORDER BY alias COLLATE NOCASE
+                """,
+                recipient_ids,
+            ).fetchall()
+
+        aliases_by_recipient_id: dict[int, list[str]] = {
+            recipient_id: [] for recipient_id in recipient_ids
+        }
+
+        for row in rows:
+            aliases_by_recipient_id[int(row["recipient_id"])].append(row["alias"])
+
+        return aliases_by_recipient_id
+
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self.db_path)

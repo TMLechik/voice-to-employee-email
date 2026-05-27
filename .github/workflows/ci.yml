@@ -33,6 +33,7 @@ jobs:
           from pathlib import Path
 
           files = sorted(Path("bot-service").rglob("*.py"))
+          files += sorted(Path("ml-service").rglob("*.py"))
           for path in files:
               compile(path.read_text(encoding="utf-8"), str(path), "exec")
 
@@ -46,9 +47,11 @@ jobs:
           import sys
 
           sys.path.insert(0, str(Path("bot-service").resolve()))
+          sys.path.insert(0, str(Path("ml-service").resolve()))
 
           import Application  # noqa: F401
           from handlers import create_router  # noqa: F401
+          from ml_service import RecipientMatcher  # noqa: F401
 
           print("application imports ok")
           PY
@@ -61,9 +64,11 @@ jobs:
           import tempfile
 
           sys.path.insert(0, str(Path("bot-service").resolve()))
+          sys.path.insert(0, str(Path("ml-service").resolve()))
 
           from repositories import SQLiteBotRepository
           from services import BotService
+          from ml_service import RecipientMatcher
 
           schema_path = Path("bot-service/database/schema.sql").resolve()
 
@@ -81,11 +86,34 @@ jobs:
               assert len(recipients) == 2
               assert service.select_recipient_by_id(recipients, first.id) == first
 
-              pending = service.create_pending_send(1001, 5000, recipients)
-              assert service.get_pending_send(1001, 5000) == pending
-              assert len(service.select_recipients_for_send(recipients, "all")) == 2
-              assert service.consume_pending_send(1001, 5000) == pending
-              assert service.get_pending_send(1001, 5000) is None
+              pending_recipient = service.create_pending_recipient_input(1001, 5000)
+              assert service.get_pending_recipient_input(1001, 5000) == pending_recipient
+              assert service.consume_pending_recipient_input(1001, 5000) == pending_recipient
+              assert service.get_pending_recipient_input(1001, 5000) is None
+
+              pending_voice = service.create_pending_voice_input(1001, 5000)
+              assert service.get_pending_voice_input(1001, 5000) == pending_voice
+              assert service.consume_pending_voice_input(1001, 5000) == pending_voice
+              assert service.get_pending_voice_input(1001, 5000) is None
+
+              service.create_pending_voice_command(
+                  telegram_user_id=1001,
+                  source_chat_id=5000,
+                  recognized_text="Tell Theory Group hello",
+                  recipient_query="Theory Group",
+                  message_text="hello",
+                  candidate_ids=[first.id],
+              )
+              selected_command = service.select_pending_voice_recipient(1001, 5000, first.id)
+              assert selected_command is not None
+              assert selected_command.selected_recipient_id == first.id
+              assert service.consume_pending_voice_command(1001, 5000) == selected_command
+
+              matcher = RecipientMatcher()
+              aliases = service.list_recipient_aliases(recipients)
+              result = matcher.match("Theory Group", recipients, aliases)
+              assert result.is_exact
+              assert result.recipient == first
 
           print("sqlite service smoke test passed")
           PY
